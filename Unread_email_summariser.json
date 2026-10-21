@@ -1,0 +1,195 @@
+{
+  "name": "Unread Email Summariser",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "a0482e1c-212a-4666-a24b-a5e729a2b62d",
+      "name": "Manual Trigger",
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -496,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "operation": "getAll",
+        "limit": 5,
+        "filters": {
+          "readStatus": "unread"
+        }
+      },
+      "id": "2ab40f45-b829-40ce-ad40-8345f187a4b6",
+      "name": "Get 5 Unread Emails",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        -272,
+        -112
+      ],
+      "webhookId": "be24ff20-3269-4c73-8682-2771b7bc3716",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "T4ih0X0gD6pA1qLA",
+          "name": "rennykenny gmail oauth2 n8n"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "id": "2cdb2d75-175b-471d-9224-c5ada52796f1",
+      "name": "OpenAI Chat Model",
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -32,
+        112
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "SjhbYGjKz0QG9Niy",
+          "name": "OpenAI account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Write ONE line (20 words maximum) describing this email. No greeting, no heading, no extra text.From: {{ $json.From }}\nSubject: {{ $json.Subject }}\nPreview: {{ $json.snippet }}",
+        "options": {}
+      },
+      "id": "ecefd52b-12f3-42c3-b957-04f1e83f3f80",
+      "name": "Unread Email Summarize",
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -32,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "output"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "31d98dd2-6076-48ca-a091-7969e9b68dd1",
+      "name": "combining summaries",
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        288,
+        -112
+      ]
+    },
+    {
+      "parameters": {
+        "sendTo": "rennykenny96@gmail.com",
+        "subject": "Your 5 unread emails",
+        "message": "={{ '<div style=\"font-family:Segoe UI,Arial,sans-serif;max-width:620px;margin:auto;border:1px solid #e0e0e0;border-radius:10px;overflow:hidden\">'\n+ '<div style=\"background:#0f766e;color:#ffffff;padding:16px 20px\"><h2 style=\"margin:0;font-size:20px\">📬 Inbox Digest</h2><p style=\"margin:4px 0 0;font-size:13px\">' + $now.toFormat('dd LLL yyyy') + ' · ' + $json.output.length + ' unread emails summarised</p></div>'\n+ '<div style=\"padding:12px 20px\">'\n+ $json.output.map((s, i) => '<div style=\"padding:12px 0;border-bottom:1px solid #eeeeee;line-height:1.5;font-size:15px;color:#222\"><span style=\"display:inline-block;background:#0f766e;color:#ffffff;border-radius:50%;width:24px;height:24px;line-height:24px;text-align:center;font-size:13px;margin-right:10px\">' + (i + 1) + '</span>' + String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\\n/g,' ') + '</div>').join('')\n+ '</div>'\n+ '<div style=\"background:#f5f5f5;color:#888888;font-size:12px;padding:10px 20px\">Sent by your n8n Unread Email Summariser</div></div>' }}",
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "f7b7539a-0c28-4592-8ba0-571f0b78350f",
+      "name": "Emailing \"Renny\"",
+      "type": "n8n-nodes-base.gmail",
+      "typeVersion": 2.1,
+      "position": [
+        496,
+        -112
+      ],
+      "webhookId": "4303a8d2-4452-4fa8-ac93-a18646566f8b",
+      "credentials": {
+        "gmailOAuth2": {
+          "id": "T4ih0X0gD6pA1qLA",
+          "name": "rennykenny gmail oauth2 n8n"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Manual Trigger": {
+      "main": [
+        [
+          {
+            "node": "Get 5 Unread Emails",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get 5 Unread Emails": {
+      "main": [
+        [
+          {
+            "node": "Unread Email Summarize",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "Unread Email Summarize",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Unread Email Summarize": {
+      "main": [
+        [
+          {
+            "node": "combining summaries",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "combining summaries": {
+      "main": [
+        [
+          {
+            "node": "Emailing \"Renny\"",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "versionId": "fccf7ffd-ae38-4dee-9ce7-745123c9472b",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "671c34f8a4dbf12909121072a7135fc38cb80830aeec96cf8827d3cbdb6dc196"
+  },
+  "nodeGroups": [],
+  "id": "E3B5tux1qLRROhTV",
+  "tags": []
+}
